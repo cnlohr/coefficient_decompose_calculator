@@ -98,7 +98,7 @@ function develop(o, d, v, highest_bit, rule)
 				v += test;
 				//o.innerHTML += `-${shifter} / `;
 				total -= shifter;
-				ret.sequence.push( -shift );
+				ret.sequence.push( shift );
 				ret.sequenceOp.push( -1 );
 			}
 		}
@@ -143,26 +143,43 @@ function updateOutput()
 	var html = "";
 	html += `Δ  ${kv.totalDiff.toFixed(6)}, V ${kv.total.toFixed(6)}, ${(100.0*kv.totalDiff/kv.target).toFixed(3)} % <BR>`;
 
-	html += `Output: (Copy this code):<div class="listelem" id=codeout onclick=CopyToClipboard("codeout")>`;
-	html += "<TABLE BORDER=2><TR><TD><XMP>";
+	html += `Output: (Copy this code):`;
+
+
+	html += `<div class="listelem" id=codeout onclick=CopyToClipboard("codeout")>`;
+	html += "<TABLE BORDER=2><TR><TD>";
+	html += "<XMP>";
+
+	var innerxmp = "";
 	if( !ismultiply )
 	{
 		for( var i = 0|0; i < kv.sequence.length | 0; i++ )
 		{
-			html += (kv.sequenceOp[i] < 0)?"-": (i!=0)?"+":"";
+			let seo = kv.sequenceOp[i];
+			innerxmp += (seo < 0)?"-": (i!=0)?"+":"";
 			let se = kv.sequence[i];
-			if( se != 0 ) html += "(";
-			html += varname;
-			html += ((se>0) ? "<<" : ((se<0) ? ">>" : "")) + ((se!=0) ? Math.abs(se).toFixed(0) : "" );
-			if( se != 0 ) html += ")";
+			if( se != 0 ) innerxmp += "(";
+			innerxmp += varname;
+			innerxmp += ((se>0) ? "<<" : ((se<0) ? ">>" : "")) + ((se!=0) ? Math.abs(se).toFixed(0) : "" );
+			if( se != 0 ) innerxmp += ")";
 		}
 	}
 	else
 	{
-		html += `(${varname} * ${kv.targ})${(kv.shift<0)?">>":((kv.shift>0)?"<<":"")}${ (kv.shift!=0) ? Math.abs(kv.shift) : "" }`;
+		innerxmp += `(${varname} * ${kv.targ})${(kv.shift<0)?">>":((kv.shift>0)?"<<":"")}${ (kv.shift!=0) ? Math.abs(kv.shift) : "" }`;
 	}
-	html += `; // Equivelent to * ${kv.total.toFixed(6)} (target was ${kv.target.toFixed(6)})`;
-	html += "</XMP></TD></TR></TABLE></div>";
+	html += innerxmp + `; // Equivelent to * ${kv.total.toFixed(6)} (target was ${kv.target.toFixed(6)})`;
+	html += "</XMP>";
+	html += "</TD></TR></TABLE>";
+	html += "</DIV>";
+
+	html += `<div class="listelem" id=codeout2 onclick=CopyToClipboard("codeout2")>`;
+	html += "<TABLE BORDER=2><TR><TD>";
+	html += "<XMP>" + innerxmp;
+	html += "</XMP>";
+
+	html += "</TD></TR></TABLE>";
+	html += "</DIV>";
 	html += "<div id=copywarningholder></div>"
 	oc.innerHTML = html;
 
@@ -206,8 +223,8 @@ function idchange(e)
 	for( mode = maxmode; mode >= minmode; mode-- )
 	{
 		if( mode == 1 ) continue; // Mode 1 (Price is right) is buggy.
-		html += "<TR><TD>";
-		html += `<div><B>${["Add Only", "Add Only Price Is Right", "Add Or Subtract"][mode]}</B></div>`;
+		html += "<TR><TD><hr>";
+		html += `<div><B>${["Add Only", "Add Only Price Is Right", "Add Or Subtract"][mode]}<BR>(click on simplest within tolerable error)</B><br><br></div>`;
 		var bestSets = new Array(32);
 
 		for( var d = 0; d < 32; d++ )
@@ -227,12 +244,12 @@ function idchange(e)
 			if( k )
 			{
 				k.typmod = 0;
-				html += `<div class="listelem" onclick='rowclick(${JSON.stringify(k)},${mode},0)'>`;
+				html += `<div class="listelem" onmousedown='rowclick(${JSON.stringify(k)},${mode},0)'>`;
 				var percent = (100.0*k.totalDiff/k.target);
 				html += `Δ${k.totalDiff<0?'':' '}${k.totalDiff.toFixed(5)} V${k.total<0?'':' '}${k.total.toFixed(5)}/${percent<0?'':' '}${percent.toFixed(3)}% `;
 				for( var j = 0; j < k.sequence.length; j++ )
 				{
-					html += `${(k.sequenceOp[j]<0) ? "-" : "+" } ${k.sequence[j]} `;
+					html += `${(k.sequenceOp[j]<0) ? "-" : "+" } ${(k.sequence[j]<0)?'↓':'↑'} ${Math.abs(k.sequence[j])} `;
 				}
 				html += "</div>";
 				dispd++;
@@ -249,7 +266,7 @@ function idchange(e)
 		html += "</TR>";
 	}
 	{
-		html += "<TR><TD><B>Multplication and shifts</B><BR>";
+		html += "<TR><TD><hr><B>Multplication and shifts</B><br><BR>";
 		for( var shift = 32; shift > -20; shift-- )
 		{
 			var sha = Math.pow( 2, -shift );
@@ -258,7 +275,9 @@ function idchange(e)
 			var outamt = targ / sha;
 			var k = { totalDiff: outamt-Number(v), total : outamt, target: Number(v), shift: shift, targ: targ, frag: frag }; 
 			if( targ < 1 ) continue;
-			html += `<DIV class="listelem" onclick='rowclick(${JSON.stringify(k)},0,1)'> Δ${k.totalDiff<0?'':' '}${k.totalDiff.toFixed(6)} (v * ${targ})${(shift<0)?">>":((shift>0)?"<<":"")}${ (shift!=0) ? Math.abs(shift) : "" }</div>`;
+			var percent = (100.0*k.totalDiff/k.target);
+			html += `<DIV class="listelem" onmousedown='rowclick(${JSON.stringify(k)},0,1)'> Δ${k.totalDiff<0?'':' '}${k.totalDiff.toFixed(6)} ${(percent<0)?'':'&nbsp'}${percent.toFixed(3)}% (v * ${targ})${(shift<0)?">>":((shift>0)?"<<":"")}${ (shift!=0) ? Math.abs(shift) : "" }</div>`;
+			if( Math.abs(percent) < 0.000001 ) break;
 		}
 		html += "</TD></TR>";
 	}
